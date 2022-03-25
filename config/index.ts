@@ -1,17 +1,17 @@
-const vpcAttr = {
+export const vpcAttr = {
     // Optional: Use custom VPC if supplied. Must have public subnets.
     customVpcId: '',
     // Optional: Restrict access to specific CIDR ranges (a.b.c.d/xx). If not specified the sites will be public.
     allowCidrs: [],
 };
-const dnsAttr = {
+export const dnsAttr = {
     // Required: Route53 Zone must be in same Account.
     zoneName: '',
     hostedZoneId: '',
     // Optional: Use existing certificate if supplied. Must be a wildcard, or match the hostname above.
     cerificateArn: '',
 };
-const apps = [
+export const apps = [
     // Create Fargate apps.
     // Images must have a web server running on the specified port.
     // If using a local Docker file then Docker Desktop is required for deployment.
@@ -50,7 +50,3 @@ const apps = [
         schedule: {},
     },
 ];
-
-module.exports = {
-    vpcAttr, dnsAttr, apps,
-};

@@ -6,11 +6,12 @@
  */
 
 /* eslint-disable no-new */
-const { App } = require('aws-cdk-lib');
-const { FargateAppStack } = require('../lib/application/application-stack');
-const { AlbStack } = require('../lib/application/load-balancer-stack');
-const { ScheduleStack } = require('../lib/application/schedule-stack');
-const options = require('../lib/application/options.js');
+import 'source-map-support/register';
+import { App } from 'aws-cdk-lib';
+import { FargateAppStack } from '../lib/application/application-stack';
+import { AlbStack } from '../lib/application/load-balancer-stack';
+import { ScheduleStack } from '../lib/application/schedule-stack';
+import { dnsAttr, apps, vpcAttr } from '../config';
 
 const app = new App();
 
@@ -23,7 +24,9 @@ const env = { account, region };
 const albStack = new AlbStack(app, 'FargateAlbStack', {
     description: 'Fargate ALB Demo Stack',
     env,
-    options,
+    dnsAttr,
+    apps,
+    vpcAttr,
 });
 const { vpc, subnets, targetGroups } = albStack;
 
@@ -31,14 +34,16 @@ const { vpc, subnets, targetGroups } = albStack;
 const scheduleStack = new ScheduleStack(app, 'FargateScheduleStack', {
     description: 'Fargate Scheduler Demo Stack',
     env,
-    options,
 });
 const { ecsScheduleFnc } = scheduleStack;
 
 // Create Fargate Service and Task stack for each app
-options.apps.forEach((appAttr) => {
+apps.forEach((appAttr) => {
     const { name } = appAttr;
-    const { targetGroup, url } = targetGroups.find((group) => group.name === name);
+    const group = targetGroups.find((item) => item.name === name);
+    if (!group) { throw new Error('Target group detail not found'); }
+
+    const { targetGroup, url } = group;
     new FargateAppStack(app, `${name}FargateAppStack`, {
         description: `Fargate Demo Stack - ${name}`,
         env,
