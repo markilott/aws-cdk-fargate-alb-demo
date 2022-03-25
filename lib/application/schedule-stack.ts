@@ -1,17 +1,22 @@
 /* eslint-disable no-new */
-const { Stack, Duration } = require('aws-cdk-lib');
-const iam = require('aws-cdk-lib').aws_iam;
-const { Function, Runtime, Code } = require('aws-cdk-lib').aws_lambda;
+import { Construct } from 'constructs';
+import { Stack, StackProps, Duration } from 'aws-cdk-lib';
+import iam = require('aws-cdk-lib/aws-iam');
+import {
+    Function, IFunction, Runtime, Code,
+} from 'aws-cdk-lib/aws-lambda';
 
-class ScheduleStack extends Stack {
-    /**
-     * Creates a Lambda function for starting and stopping ECS Tasks
-     *
-     * @param {cdk.Construct} scope
-     * @param {string} id
-     * @param {cdk.StackProps=} props
-     */
-    constructor(scope, id, props) {
+/**
+ * Creates a Lambda function for starting and stopping ECS Tasks
+ *
+ * @param {Construct} scope
+ * @param {string} id
+ * @param {ScheduleStackProps} props
+ */
+export class ScheduleStack extends Stack {
+    ecsScheduleFnc: IFunction;
+
+    constructor(scope: Construct, id: string, props: StackProps) {
         super(scope, id, props);
 
         // Lambda Function to start/stop tasks =====================================
@@ -47,5 +52,3 @@ class ScheduleStack extends Stack {
         this.ecsScheduleFnc = ecsScheduleFnc;
     }
 }
-
-module.exports = { ScheduleStack };

@@ -1,32 +1,57 @@
 /* eslint-disable no-new */
-const { Stack, Tags } = require('aws-cdk-lib');
-const {
-    ApplicationLoadBalancer, ApplicationProtocol, ApplicationTargetGroup, ListenerAction,
-    TargetType, ListenerCondition,
-} = require('aws-cdk-lib').aws_elasticloadbalancingv2;
-const {
-    Vpc, SecurityGroup, Peer, Port,
-} = require('aws-cdk-lib').aws_ec2;
-const { HostedZone, ARecord, RecordTarget } = require('aws-cdk-lib').aws_route53;
-const { LoadBalancerTarget } = require('aws-cdk-lib').aws_route53_targets;
-const { Certificate, CertificateValidation } = require('aws-cdk-lib').aws_certificatemanager;
+import { Construct } from 'constructs';
+import { Stack, StackProps, Tags } from 'aws-cdk-lib';
+import {
+    ApplicationLoadBalancer, ApplicationProtocol, ApplicationTargetGroup,
+    ListenerAction, TargetType, ListenerCondition,
+} from 'aws-cdk-lib/aws-elasticloadbalancingv2';
+import {
+    Vpc, IVpc, ISubnet, SecurityGroup, Peer, Port,
+} from 'aws-cdk-lib/aws-ec2';
+import { HostedZone, ARecord, RecordTarget } from 'aws-cdk-lib/aws-route53';
+import { LoadBalancerTarget } from 'aws-cdk-lib/aws-route53-targets';
+import { Certificate, CertificateValidation } from 'aws-cdk-lib/aws-certificatemanager';
 
-class AlbStack extends Stack {
-    /**
-     * Deploys a public facing Application Load Balancer
-     * and Listeners for use by the Fargate apps
-     *
-     * @param {cdk.Construct} scope
-     * @param {string} id
-     * @param {cdk.StackProps=} props
-     */
-    constructor(scope, id, props) {
+interface AlbStackProps extends StackProps {
+    vpcAttr: {
+        customVpcId?: string,
+        allowCidrs?: string[],
+    },
+    dnsAttr: {
+        zoneName: string,
+        hostedZoneId: string,
+        cerificateArn?: string,
+    },
+    apps: {
+        name: string,
+        hostname: string,
+        containerPort?: number,
+    }[],
+}
+
+/**
+ * Deploys a public facing Application Load Balancer
+ * and Listeners for use by the Fargate apps
+ *
+ * @param {Construct} scope
+ * @param {string} id
+ * @param {AlbStackProps} props
+ */
+export class AlbStack extends Stack {
+    vpc: IVpc;
+
+    subnets: ISubnet[];
+
+    targetGroups: {
+        name: string,
+        targetGroup: ApplicationTargetGroup,
+        url: string,
+    }[];
+
+    constructor(scope: Construct, id: string, props: AlbStackProps) {
         super(scope, id, props);
 
-        const {
-            options,
-        } = props;
-        const { vpcAttr, dnsAttr } = options;
+        const { vpcAttr, dnsAttr } = props;
 
         // VPC ==================================================================================================
 
@@ -111,7 +136,7 @@ class AlbStack extends Stack {
         });
 
         // Target Groups and Routes for our apps ========================================================================
-        const { apps } = options;
+        const { apps } = props;
         let priority = 1; // We need a unique priority for each app
 
         this.targetGroups = apps.map((app) => {
@@ -153,5 +178,3 @@ class AlbStack extends Stack {
         });
     }
 }
-
-module.exports = { AlbStack };

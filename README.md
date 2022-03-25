@@ -1,6 +1,6 @@
 # AWS CDK Fargate and ALB Demo
 
-This Javascript CDK project creates demo web apps on Fargate with an Application Load Balancer.
+This Typescript CDK project creates demo web apps on Fargate with an Application Load Balancer.
 
 A more detailed explanation is available [in this Medium article](https://markilott.medium.com/fargate-web-demo-using-cdk-d7ba12a0d166).
 
@@ -43,21 +43,21 @@ Assuming you have the AWS CLI and CDK installed and configured already...
 Setup the project:
 - Clone the repo
 - run `npm install`
-- Update the `lib/application/options.js` file with your own environment details and preferences
+- Update the `config/index.ts` file with your own environment details and preferences
 
 &nbsp;
 
 ## Options
 
-- vpcId - leave blank to use the default VPC, or enter your own VPC Id.
-- zoneName and hostedZoneId - your custom Route53 domain and hostname for the ALB.
-- certificateArn - we can create a new certificate for the custom hostname, or you can use an existing certificate.
+- `vpcId` - leave blank to use the default VPC, or enter your own VPC Id.
+- `zoneName` and `hostedZoneId` - your custom Route53 domain and hostname for the ALB.
+- `certificateArn` - we can create a new certificate for the custom hostname, or you can use an existing certificate.
 
 App options:
-- dockerHubImage - the URI for the image
-- dockerFileDir - path to a folder containing a Dockerfile
-- containerPort - the port for the container web server
-- schedule start and stop - CRON strings for the optional task schedule. The ECS task will be started and stopped on the specified schedules.
+- `dockerHubImage` - the URI for the image
+- `dockerFileDir` - path to a folder containing a Dockerfile
+- `containerPort` - the port for the container web server
+- schedule `start` and `stop` - CRON strings for the optional task schedule. The ECS task will be started and stopped on the specified schedules.
 
 &nbsp;
 

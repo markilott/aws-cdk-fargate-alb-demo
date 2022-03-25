@@ -1,25 +1,52 @@
 /* eslint-disable no-new */
-const { Stack, Tags, CfnOutput } = require('aws-cdk-lib');
-const ecs = require('aws-cdk-lib').aws_ecs;
-const { SecurityGroup } = require('aws-cdk-lib').aws_ec2;
-const iam = require('aws-cdk-lib').aws_iam;
-const { DockerImageAsset } = require('aws-cdk-lib').aws_ecr_assets;
-const { Rule, Schedule, RuleTargetInput } = require('aws-cdk-lib').aws_events;
-const { LambdaFunction } = require('aws-cdk-lib').aws_events_targets;
+import { Construct } from 'constructs';
+import {
+    Stack, StackProps, Tags, CfnOutput,
+} from 'aws-cdk-lib';
+import {
+    Cluster, FargateTaskDefinition, ContainerImage, FargateService,
+} from 'aws-cdk-lib/aws-ecs';
+import { PolicyStatement } from 'aws-cdk-lib/aws-iam';
+import { DockerImageAsset } from 'aws-cdk-lib/aws-ecr-assets';
+import { Rule, Schedule, RuleTargetInput } from 'aws-cdk-lib/aws-events';
+import { LambdaFunction } from 'aws-cdk-lib/aws-events-targets';
+import {
+    IVpc, ISubnet, SecurityGroup,
+} from 'aws-cdk-lib/aws-ec2';
+import { IFunction } from 'aws-cdk-lib/aws-lambda';
+import { ApplicationTargetGroup } from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 
-class FargateAppStack extends Stack {
-    /**
-     * Creates Fargate Service using local definition to create an ECR image
-     * or an image from DockerHub.
-     * If using a local image Docker Desktop must be installed.
-     * If using DockerHub image we expect one with a web server on port 80.
-     * Attaches to the new Fargate service to our ALB.
-     *
-     * @param {cdk.Construct} scope
-     * @param {string} id
-     * @param {cdk.StackProps=} props
-     */
-    constructor(scope, id, props) {
+interface FargateAppStackProps extends StackProps {
+    appAttr: {
+        name: string,
+        containerPort?: number,
+        dockerHubImage?: string,
+        dockerFileDir?: string,
+        schedule: {
+            start?: string,
+            stop?: string,
+        }
+    },
+    targetGroup: ApplicationTargetGroup,
+    url: string,
+    vpc: IVpc,
+    subnets: ISubnet[],
+    ecsScheduleFnc: IFunction,
+}
+
+/**
+ * Creates Fargate Service using local definition to create an ECR image
+ * or an image from DockerHub.
+ * If using a local image Docker Desktop must be installed.
+ * If using DockerHub image we expect one with a web server on port 80.
+ * Attaches to the new Fargate service to our ALB.
+ *
+ * @param {Construct} scope
+ * @param {string} id
+ * @param {StackProps=} props
+ */
+export class FargateAppStack extends Stack {
+    constructor(scope: Construct, id: string, props: FargateAppStackProps) {
         super(scope, id, props);
 
         const { appAttr, targetGroup, url } = props;
@@ -49,7 +76,7 @@ class FargateAppStack extends Stack {
         // Create image from local file and upload to ECR
         // Requires Docker Desktop installed locally
         if (!imageUri) {
-            const { dockerFileDir = '' } = appAttr;
+            const { dockerFileDir } = appAttr;
             if (!dockerFileDir) { throw new Error('dockerFileDir is required for local image'); }
             const ecrImage = new DockerImageAsset(this, `${name}AppImage`, {
                 directory: `${__dirname}/${dockerFileDir}`,
@@ -60,21 +87,21 @@ class FargateAppStack extends Stack {
 
         // Fargate ==========================================================================================================
         // ECS Cluster
-        const cluster = new ecs.Cluster(this, `${name}Cluster`, { vpc });
+        const cluster = new Cluster(this, `${name}Cluster`, { vpc });
 
         // Fargate Task
-        const taskDefinition = new ecs.FargateTaskDefinition(this, 'taskDef', {
+        const taskDefinition = new FargateTaskDefinition(this, 'taskDef', {
             memoryLimitMiB: 512,
             cpu: 256,
         });
         taskDefinition.addContainer('webContainer', {
-            image: ecs.ContainerImage.fromRegistry(imageUri),
+            image: ContainerImage.fromRegistry(imageUri),
             portMappings: [{ containerPort }],
         });
 
         // Allow Fargate to access the ECR Image if we created one
         if (repositoryArn) {
-            taskDefinition.addToExecutionRolePolicy(new iam.PolicyStatement({
+            taskDefinition.addToExecutionRolePolicy(new PolicyStatement({
                 sid: 'EcrImage',
                 resources: [repositoryArn],
                 actions: [
@@ -83,7 +110,7 @@ class FargateAppStack extends Stack {
                     'ecr:BatchGetImage',
                 ],
             }));
-            taskDefinition.addToExecutionRolePolicy(new iam.PolicyStatement({
+            taskDefinition.addToExecutionRolePolicy(new PolicyStatement({
                 sid: 'EcrAuth',
                 resources: ['*'],
                 actions: [
@@ -93,7 +120,7 @@ class FargateAppStack extends Stack {
         }
 
         // Fargate Service
-        const service = new ecs.FargateService(this, `${name}Svc`, {
+        const service = new FargateService(this, `${name}Svc`, {
             cluster,
             taskDefinition,
             desiredCount: 1,
@@ -120,11 +147,11 @@ class FargateAppStack extends Stack {
             const params = {
                 clusterArn: cluster.clusterArn,
                 serviceName: service.serviceName,
+                active: true,
             };
 
             // Schedule Rules
             if (start) {
-                params.active = true;
                 const mgtTarget = new LambdaFunction(ecsScheduleFnc, {
                     event: RuleTargetInput.fromObject({ params }),
                     retryAttempts: 3,
@@ -150,5 +177,3 @@ class FargateAppStack extends Stack {
         }
     }
 }
-
-module.exports = { FargateAppStack };
