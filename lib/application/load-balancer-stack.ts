@@ -1,4 +1,3 @@
-/* eslint-disable no-new */
 import { Construct } from 'constructs';
 import { Stack, StackProps, Tags } from 'aws-cdk-lib';
 import {
