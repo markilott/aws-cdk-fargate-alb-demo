@@ -1,10 +1,8 @@
-/* eslint-disable no-new */
 import { Construct } from 'constructs';
 import { Stack, StackProps, Duration } from 'aws-cdk-lib';
 import iam = require('aws-cdk-lib/aws-iam');
-import {
-    Function, IFunction, Runtime, Code,
-} from 'aws-cdk-lib/aws-lambda';
+import { Runtime } from 'aws-cdk-lib/aws-lambda';
+import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 
 /**
  * Creates a Lambda function for starting and stopping ECS Tasks
@@ -14,19 +12,21 @@ import {
  * @param {ScheduleStackProps} props
  */
 export class ScheduleStack extends Stack {
-    ecsScheduleFnc: IFunction;
+    ecsScheduleFnc: NodejsFunction;
 
     constructor(scope: Construct, id: string, props: StackProps) {
         super(scope, id, props);
 
         // Lambda Function to start/stop tasks =====================================
-        const ecsScheduleFnc = new Function(this, 'ecsScheduleFnc', {
+        const ecsScheduleFnc = new NodejsFunction(this, 'EcsScheduleFnc', {
             description: 'Lambda ECS Service Mgt Function',
-            functionName: 'ecsScheduleFnc',
-            runtime: Runtime.NODEJS_14_X,
+            runtime: Runtime.NODEJS_16_X,
             handler: 'index.handler',
             timeout: Duration.seconds(5),
-            code: Code.fromAsset(`${__dirname}/lambda/manage-task`),
+            entry: `${__dirname}/lambda/manage-task/index.ts`,
+            bundling: {
+                sourceMap: true,
+            },
         });
 
         // IAM Policy to allow access to ECS Services from Lambda

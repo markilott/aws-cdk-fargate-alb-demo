@@ -1,22 +1,25 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
-const AWS = require('aws-sdk');
+import { ECS } from 'aws-sdk';
 
-const ecs = new AWS.ECS();
+const ecs = new ECS();
+
+type EventProps = {
+    params: {
+        active: boolean,
+        serviceName: string,
+        clusterArn: string,
+    },
+};
 
 /**
  * Starts or stops a Fargate Service by setting
  * the task DesiredCount to one or zero
- *
- * @param {object} params
- * @param {boolean} [params.active = false]
- * @param {string} params.serviceName
- * @param {string} params.clusterArn
  */
-exports.handler = async (event) => {
+export const handler = async (event: EventProps) => {
     console.log('Event: ', JSON.stringify(event));
 
     try {
-        const { params = {} } = event;
+        const { params } = event;
         const { active = false, serviceName = '', clusterArn = '' } = params;
         if (!serviceName || !clusterArn) { throw new Error('serviceName and clusterArn are required'); }
 
@@ -27,12 +30,11 @@ exports.handler = async (event) => {
         };
 
         // Update the desired task count
-        const { service } = await ecs.updateService(ecsParams).promise();
-
-        // Output the result
         const {
             status, desiredCount, runningCount, pendingCount,
-        } = service;
+        } = (await ecs.updateService(ecsParams).promise()).service as ECS.Service;
+
+        // Output the result
         const result = {
             success: true,
             operation: (active) ? 'start' : 'stop',
@@ -45,8 +47,7 @@ exports.handler = async (event) => {
         console.log('Result: ', JSON.stringify(result));
         return result;
     } catch (err) {
-        err.message = (err.message) || 'Internal error';
         console.log('Error caught: ', err);
-        throw new Error(err);
+        throw err;
     }
 };
