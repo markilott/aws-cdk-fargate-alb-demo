@@ -1,6 +1,6 @@
 import { Construct } from 'constructs';
 import { Stack, StackProps, Duration } from 'aws-cdk-lib';
-import iam = require('aws-cdk-lib/aws-iam');
+import { PolicyStatement } from 'aws-cdk-lib/aws-iam';
 import { Runtime } from 'aws-cdk-lib/aws-lambda';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 
@@ -20,7 +20,7 @@ export class ScheduleStack extends Stack {
         // Lambda Function to start/stop tasks =====================================
         const ecsScheduleFnc = new NodejsFunction(this, 'EcsScheduleFnc', {
             description: 'Lambda ECS Service Mgt Function',
-            runtime: Runtime.NODEJS_16_X,
+            runtime: Runtime.NODEJS_24_X,
             handler: 'index.handler',
             timeout: Duration.seconds(5),
             entry: `${__dirname}/lambda/manage-task/index.ts`,
@@ -30,7 +30,7 @@ export class ScheduleStack extends Stack {
         });
 
         // IAM Policy to allow access to ECS Services from Lambda
-        ecsScheduleFnc.addToRolePolicy(new iam.PolicyStatement({
+        ecsScheduleFnc.addToRolePolicy(new PolicyStatement({
             sid: 'ECSServices',
             resources: ['*'],
             actions: [
@@ -39,7 +39,7 @@ export class ScheduleStack extends Stack {
             ],
         }));
         // IAM Policy to allow Start/Stop of the demo services
-        ecsScheduleFnc.addToRolePolicy(new iam.PolicyStatement({
+        ecsScheduleFnc.addToRolePolicy(new PolicyStatement({
             sid: 'DemoApp',
             // Allow access to all ECS tasks - we don't do this in Production.
             // Alternatives include using Tags or prefixes, or moving this policy add to the app stacks themselves

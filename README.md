@@ -10,7 +10,7 @@ A more detailed explanation is available [in this Medium article](https://markil
 
 The ALB uses a custom hostname and certificate for HTTPS access.
 
-There are two demo docker apps included, and the Wordpress image from Docker Hub. You can easily modify to use different containers.
+There are two demo docker apps included, and the Apache httpd image from Docker Hub. You can easily modify to use different containers.
 
 Also includes a basic schedule demo, which you can use to optionally start and stop the Fargate tasks.
 

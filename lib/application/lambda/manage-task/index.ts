@@ -1,7 +1,6 @@
-// eslint-disable-next-line import/no-extraneous-dependencies
-import { ECS } from 'aws-sdk';
+import { ECSClient, UpdateServiceCommand } from '@aws-sdk/client-ecs';
 
-const ecs = new ECS();
+const ecs = new ECSClient();
 
 type EventProps = {
     params: {
@@ -23,16 +22,15 @@ export const handler = async (event: EventProps) => {
         const { active = false, serviceName = '', clusterArn = '' } = params;
         if (!serviceName || !clusterArn) { throw new Error('serviceName and clusterArn are required'); }
 
-        const ecsParams = {
+        // Update the desired task count
+        const { service } = await ecs.send(new UpdateServiceCommand({
             service: serviceName,
             cluster: clusterArn,
             desiredCount: (active) ? 1 : 0,
-        };
-
-        // Update the desired task count
+        }));
         const {
             status, desiredCount, runningCount, pendingCount,
-        } = (await ecs.updateService(ecsParams).promise()).service as ECS.Service;
+        } = service || {};
 
         // Output the result
         const result = {
