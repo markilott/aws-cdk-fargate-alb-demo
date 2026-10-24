@@ -41,11 +41,11 @@ export const apps = [
         },
     },
     {
-        name: 'wordpress',
+        name: 'apacheDemo',
         containerPort: 80,
-        hostname: 'wordpress',
-        // Specify local image path or Docker Hub (or ECR) URI
-        dockerHubImage: 'wordpress',
+        hostname: 'apache-demo',
+        // Basic Apache web server image - just here to show a container running from Docker Hub with no local build required
+        dockerHubImage: 'httpd',
         dockerFileDir: '',
         schedule: {},
     },
